@@ -1,0 +1,21 @@
+Package: HierFabs
+Type: Package
+Title: A General Framework for Identifying Hierachical Interaction of Genomics Data interaction of genomics data
+Version: 0.1.0
+Authors@R: c(person(given = "Xiao", family = "Zhang", role = c("aut","cre"), email = "zhangxiao_0422@163.com"),
+             person(given = "Xu", family = "Liu", role = "aut"),
+             person(given = "Yiming", family = "Liu", role = "aut"),
+             person(given = "Xingjie", family = "Shi", role = "aut"))
+Author: Xiao Zhang [aut,cre], 
+        Xu Liu [aut],
+        Yiming Liu [aut],
+        Xingjie Shi [aut]
+Maintainer: Xiao Zhang <zhangxiao_0422@163.com>
+Description: Provides an efficient procedure for fitting the entire solution path adaptively for identifying hierachical interaction of genomics data in linear model or cox model under the strong or weak heredity constraint. Lasso penalty is used to generate a sparse solution. Both gene-gene type interactions and gene-environment interactions are supported. 
+License: GPL (>= 2)
+Imports: Matrix
+Repository: github
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.1
+NeedsCompilation: yes
