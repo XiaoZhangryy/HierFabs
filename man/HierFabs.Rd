@@ -79,10 +79,10 @@ set.seed(0)
 n = 500
 p = 100
 x = matrix(rnorm(n*p),n,p)
-eta = x[,1:4] \%*\% rep(1,4) + 3*x[,1]*x[,2] + 3*x[,1]*x[,4]
+eta = x[,1:4] %*% rep(1,4) + 3*x[,1]*x[,2] + 3*x[,1]*x[,4]
 y =  eta + rnorm(n)
 xtest = matrix(rnorm(n*p),n,p)
-eta.test = xtest[,1:4] \%*\% rep(1,4) + 3*xtest[,1]*xtest[,2] + 3*xtest[,1]*xtest[,4]
+eta.test = xtest[,1:4] %*% rep(1,4) + 3*xtest[,1]*xtest[,2] + 3*xtest[,1]*xtest[,4]
 ytest =  eta.test + rnorm(n)
 fit.gg.strong = HierFabs(x, y)
 y.pred.gg.s = predict(fit.gg.strong, xtest, ytest)
@@ -98,7 +98,7 @@ print(fit.gg.weak)
 ## Cox model with Gene-Environment interactions
 pz = 10
 z = matrix(rnorm(n*pz),n,pz)
-eta.ge = x[,1:4] \%*\% rep(1,4) + z[,1] + z[,2] + 3*x[,1]*z[,1] + 3*x[,2]*z[,2]
+eta.ge = x[,1:4] %*% rep(1,4) + z[,1] + z[,2] + 3*x[,1]*z[,1] + 3*x[,2]*z[,2]
 err = log(rweibull(n, shape = 1, scale = 1))
 y0 = exp(-eta.ge + err)
 cens = quantile(y0, 0.9)
