@@ -36,7 +36,7 @@
 #'
 #' @examples
 #' set.seed(0)
-#' n = 100
+#' n = 500
 #' p = 100
 #' x = matrix(rnorm(n*p),n,p)
 #' eta = x[,1:4] %*% rep(1,4) + 3*x[,1]*x[,2] + 3*x[,1]*x[,4]
