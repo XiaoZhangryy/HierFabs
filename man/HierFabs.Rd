@@ -9,7 +9,7 @@ HierFabs(
   y,
   E,
   weight = NULL,
-  model = c("square", "cox"),
+  model = c("gaussian", "cox"),
   back = TRUE,
   stoping = TRUE,
   eps = 0.01,
@@ -32,7 +32,7 @@ HierFabs(
 
 \item{weight}{An optional weights. Default is 1 for each observation.}
 
-\item{model}{A character string representing one of the built-in models.}
+\item{model}{A character string representing one of the built-in models. 'gaussian' for linear model and 'cox' for cox model.}
 
 \item{back}{An indicator of whether to take backward steps.}
 
@@ -48,7 +48,7 @@ HierFabs(
 
 \item{hier}{Whether to enforce strong or weak heredity. Default is 'strong'.}
 
-\item{max_s}{Limit the maximum number of variables in the model.}
+\item{max_s}{Limit the maximum number of variables in the model. When exceed this limit, program will early stopped.}
 
 \item{diagonal}{An indicator of whether to include "pure" quadratic terms. Work when gene-gene interactions are of interest.}
 
@@ -75,8 +75,8 @@ A list.
 A hierarchical Forward and Backward Stagewise (HierFabs) algorithm for identifying hierachical interaction of genomics data.
 }
 \examples{
-set.seed(1)
-n = 500
+set.seed(0)
+n = 100
 p = 100
 x = matrix(rnorm(n*p),n,p)
 eta = x[,1:4] \%*\% rep(1,4) + 3*x[,1]*x[,2] + 3*x[,1]*x[,4]
@@ -85,35 +85,44 @@ xtest = matrix(rnorm(n*p),n,p)
 eta.test = xtest[,1:4] \%*\% rep(1,4) + 3*xtest[,1]*xtest[,2] + 3*xtest[,1]*xtest[,4]
 ytest =  eta.test + rnorm(n)
 fit.gg.strong = HierFabs(x, y)
-y.pred.gg.s = predict(fit.gg.strong, xtest)
-mean((y.pred.gg.s-ytest)^2)
+y.pred.gg.s = predict(fit.gg.strong, xtest, ytest)
+y.pred.gg.s$mse
+print(fit.gg.strong)
 
 ## Weak hierarchy
 fit.gg.weak = HierFabs(x, y, hier="weak")
-y.pred.gg.w = predict(fit.gg.strong, xtest)
-mean((y.pred.gg.w-ytest)^2)
+y.pred.gg.w = predict(fit.gg.weak, xtest, ytest)
+y.pred.gg.w$mse
+print(fit.gg.weak)
 
 ## Cox model with Gene-Environment interactions
 pz = 10
 z = matrix(rnorm(n*pz),n,pz)
-eta.ge = x[,1] + x[,2] + z[,1] + z[,2] + 3*x[,1]*z[,1] + 3*x[,2]*z[,2]
+eta.ge = x[,1:4] \%*\% rep(1,4) + z[,1] + z[,2] + 3*x[,1]*z[,1] + 3*x[,2]*z[,2]
 err = log(rweibull(n, shape = 1, scale = 1))
 y0 = exp(-eta.ge + err)
 cens = quantile(y0, 0.9)
 y.ge = pmin(y0, cens)
 status = 1 * (y0<=cens)
 ztest = matrix(rnorm(n*pz),n,pz)
-eta.ge.test = xtest[,1] + xtest[,2] + ztest[,1] + ztest[,2]
+eta.ge.test = rowSums(xtest[,1:4]) + ztest[,1] + ztest[,2]
 eta.ge.test = eta.ge.test + 3*xtest[,1]*ztest[,1] + 3*xtest[,2]*ztest[,2]
+err.test = log(rweibull(n, shape = 1, scale = 1))
+y0.test = exp(-eta.ge.test + err.test)
+cens = quantile(y0.test, 0.9)
+y.ge.test = pmin(y0.test, cens)
+status.test = 1 * (y0.test<=cens)
 fit.ge.strong = HierFabs(x, y.ge, z, model="cox", status=status)
-y.pred.gg.s = predict(fit.ge.strong, xtest, ztest)
-mean((y.pred.gg.s-eta.ge.test)^2)
+y.pred.ge.s = predict(fit.ge.strong, xtest, y.ge.test, ztest, status.test)
+y.pred.ge.s$c.index
+print(fit.ge.strong)
 
 ## Weak hierarchy
 fit.ge.weak = HierFabs(x, y.ge, z, model="cox", status=status, hier="weak")
-y.pred.ge.w = predict(fit.ge.weak, xtest, ztest)
-mean((y.pred.ge.w-eta.ge.test)^2)
+y.pred.ge.w = predict(fit.ge.weak, xtest, y.ge.test, ztest, status.test)
+y.pred.ge.w$c.index
+print(fit.ge.weak)
 }
 \seealso{
-\code{\link{predict.HierFabs}}
+\code{\link{predict.HierFabs}}, \code{\link{print.HierFabs}}
 }

@@ -791,7 +791,7 @@ int *df, *child, isq, *stautus, *sparse_i, *sparse_j, *iter, max_s;
             break;
         }
         if (param[3] > max_s) {
-            Rprintf("Warning! Max nonzero number is larger than predetermined threshold. Program ended early.\n");
+            //Rprintf("Warning! Max nonzero number is larger than predetermined threshold. Program ended early.\n");
             *iter = i+2;
             break;
         }
@@ -1503,7 +1503,7 @@ int *df, *child, *stautus, *sparse_i, *sparse_j, stoping, max_s;
             break;
         }
         if (param[3] > max_s) {
-            Rprintf("Warning! Max nonzero number is larger than predetermined threshold. Program ended early.\n");
+            //Rprintf("Warning! Max nonzero number is larger than predetermined threshold. Program ended early.\n");
             *iter = i+2;
             break;
         }
@@ -1525,7 +1525,7 @@ SEXP Hierarchy_Fabs(SEXP X, SEXP Z, SEXP Y, SEXP Weight, SEXP Model, SEXP Epsilo
     const char *modeltype = CHAR(asChar(Model));
     const char *Constrain = CHAR(asChar(Hierarchy));
 
-    if (strcmp(modeltype, "square") == 0) model = 1;
+    if (strcmp(modeltype, "gaussian") == 0) model = 1;
     else if (strcmp(modeltype, "cox") == 0) model = 2;
     else model = 1;
 

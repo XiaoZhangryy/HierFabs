@@ -13,7 +13,7 @@ Author: Xiao Zhang [aut,cre],
 Maintainer: Xiao Zhang <zhangxiao_0422@163.com>
 Description: Provides an efficient procedure for fitting the entire solution path adaptively for identifying hierachical interaction of genomics data in linear model or cox model under the strong or weak heredity constraint. Lasso penalty is used to generate a sparse solution. Both gene-gene type interactions and gene-environment interactions are supported. 
 License: GPL (>= 2)
-Imports: Matrix
+Imports: Matrix, methods
 Repository: github
 Encoding: UTF-8
 LazyData: true

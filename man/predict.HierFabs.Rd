@@ -4,21 +4,30 @@
 \alias{predict.HierFabs}
 \title{Model prediction based on a fitted HierFabs object.}
 \usage{
-\method{predict}{HierFabs}(object, new.G, new.E, allpath = FALSE, ...)
+\method{predict}{HierFabs}(object, new.G, new.y, new.E, new.s, allpath = FALSE, ...)
 }
 \arguments{
 \item{object}{Fitted \code{'HierFabs'} model object.}
 
 \item{new.G}{Matrix of new values for genes.}
 
+\item{new.y}{Vector of new values for response.}
+
 \item{new.E}{An optional new values for environment variables.}
+
+\item{new.s}{An optional new values for status variables. Used in cox model prediction only.}
 
 \item{allpath}{allpath = T will output all the predictions on the solution path. allpath = FALSE will only output the optimal solution selected in the 'HierFabs' object.}
 
 \item{\dots}{Not used. Other arguments to predict.}
 }
 \value{
-Predictions for each observation.
+A list.
+\itemize{
+  \item pred - The linear predict.
+  \item mse - Mean square error for linear model.
+  \item c.index - C index for cox model.
+}
 }
 \description{
 Similar to the usual predict methods, this function returns predictions from a fitted \code{'HierFabs'} object.

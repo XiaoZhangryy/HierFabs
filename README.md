@@ -29,34 +29,43 @@
     eta.test = xtest[,1:4] %*% rep(1,4) + 3*xtest[,1]*xtest[,2] + 3*xtest[,1]*xtest[,4]
     ytest =  eta.test + rnorm(n)
     fit.gg.strong = HierFabs(x, y)
-    y.pred.gg.s = predict(fit.gg.strong, xtest)
-    mean((y.pred.gg.s-ytest)^2)
-    
+    y.pred.gg.s = predict(fit.gg.strong, xtest, ytest)
+    y.pred.gg.s$mse
+    print(fit.gg.strong)
+
     ## Weak hierarchy
     fit.gg.weak = HierFabs(x, y, hier="weak")
-    y.pred.gg.w = predict(fit.gg.strong, xtest)
-    mean((y.pred.gg.w-ytest)^2)
-    
+    y.pred.gg.w = predict(fit.gg.weak, xtest, ytest)
+    y.pred.gg.w$mse
+    print(fit.gg.weak)
+
     ## Cox model with Gene-Environment interactions
     pz = 10
     z = matrix(rnorm(n*pz),n,pz)
-    eta.ge = x[,1] + x[,2] + z[,1] + z[,2] + 3*x[,1]*z[,1] + 3*x[,2]*z[,2]
+    eta.ge = x[,1:4] %*% rep(1,4) + z[,1] + z[,2] + 3*x[,1]*z[,1] + 3*x[,2]*z[,2]
     err = log(rweibull(n, shape = 1, scale = 1))
     y0 = exp(-eta.ge + err)
     cens = quantile(y0, 0.9)
     y.ge = pmin(y0, cens)
     status = 1 * (y0<=cens)
     ztest = matrix(rnorm(n*pz),n,pz)
-    eta.ge.test = xtest[,1] + xtest[,2] + ztest[,1] + ztest[,2]
+    eta.ge.test = rowSums(xtest[,1:4]) + ztest[,1] + ztest[,2] 
     eta.ge.test = eta.ge.test + 3*xtest[,1]*ztest[,1] + 3*xtest[,2]*ztest[,2]
+    err.test = log(rweibull(n, shape = 1, scale = 1))
+    y0.test = exp(-eta.ge.test + err.test)
+    cens = quantile(y0.test, 0.9)
+    y.ge.test = pmin(y0.test, cens)
+    status.test = 1 * (y0.test<=cens)
     fit.ge.strong = HierFabs(x, y.ge, z, model="cox", status=status)
-    y.pred.gg.s = predict(fit.ge.strong, xtest, ztest)
-    mean((y.pred.gg.s-eta.ge.test)^2)
-    
+    y.pred.ge.s = predict(fit.ge.strong, xtest, y.ge.test, ztest, status.test)
+    y.pred.ge.s$c.index
+    print(fit.ge.strong)
+
     ## Weak hierarchy
     fit.ge.weak = HierFabs(x, y.ge, z, model="cox", status=status, hier="weak")
-    y.pred.ge.w = predict(fit.ge.weak, xtest, ztest)
-    mean((y.pred.ge.w-eta.ge.test)^2)
+    y.pred.ge.w = predict(fit.ge.weak, xtest, y.ge.test, ztest, status.test)
+    y.pred.ge.w$c.index
+    print(fit.ge.weak)
     
 # References
 
