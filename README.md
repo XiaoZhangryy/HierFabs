@@ -9,11 +9,11 @@
     #install.packages("devtools")
     #install.packages("Rcpp")
     library(devtools)
-    install_github("Tesla-Xiao/HierFabs")
+    install_github("XiaoZhangryy/HierFabs")
 
 # Usage
 
-   - [x] [HierFabs-manual](https://github.com/Tesla-Xiao/HierFabs/blob/master/inst/HierFabs-manual.pdf) ------------ Details of the usage of the package.
+   - [x] [HierFabs-manual](https://github.com/XiaoZhangryy/HierFabs/blob/master/inst/HierFabs-manual.pdf) ------------ Details of the usage of the package.
    
 # Example
     
