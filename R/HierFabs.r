@@ -18,6 +18,7 @@
 #' @param diagonal An indicator of whether to include "pure" quadratic terms. Work when gene-gene interactions are of interest.
 #' @param status A censoring indicator.
 #' @param gamma A tuning parameter in EBIC.
+#' @param tau parameter for quantile regression.
 #'
 #' @return A list.
 #' \itemize{
@@ -83,9 +84,10 @@
 #' y.pred.ge.w$c.index
 #' print(fit.ge.weak)
 
-HierFabs = function(G, y, E, weight = NULL, model = c("gaussian", "cox"), back = TRUE,
+HierFabs = function(G, y, E, weight = NULL, model = c("gaussian", "cox", "quantile"), back = TRUE,
   stoping = TRUE, eps = 0.01, xi = 10^-6, iter = 3000, lambda.min = NULL,
-  hier = c("strong", "weak"), max_s = NULL, diagonal = FALSE, status = NULL, gamma = NULL)
+  hier = c("strong", "weak"), max_s = NULL, diagonal = FALSE, status = NULL, gamma = NULL, 
+  tau = NULL)
 {
   n  = nrow(G)
   px = ncol(G)
@@ -133,6 +135,8 @@ HierFabs = function(G, y, E, weight = NULL, model = c("gaussian", "cox"), back =
     if (!missing(E)) E = E[y.order, ]
   }
 
+  if (model != "quantile") tau = 0
+
   fit <- .Call("Hierarchy_Fabs",
                as.numeric(G),
                as.numeric(E),
@@ -152,7 +156,8 @@ HierFabs = function(G, y, E, weight = NULL, model = c("gaussian", "cox"), back =
                as.integer(diagonal),
                as.integer(status),
                as.integer(ge),
-               as.numeric(gamma) )
+               as.numeric(gamma),
+               as.numeric(tau) )
 
   opt      = which.min(fit$bic)
   theta <- sparseMatrix(fit$index_i, fit$index_j, x = fit$beta, dims = c(q, fit$iter), index1 = FALSE)

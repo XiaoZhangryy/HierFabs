@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 // Loss function
-double Loss(double *y, double *xb, int model, int *param, int *stautus)
+double Loss(double *y, double *xb, int model, int *param, int *stautus, double tau)
 {
     int i;
     int n = param[0];
@@ -25,6 +25,13 @@ double Loss(double *y, double *xb, int model, int *param, int *stautus)
             temp += exp(xb[i]);
             if (stautus[i]) val -= xb[i] - log(temp);
         }
+    } else if (model == 3) {
+        // for quantile regression
+        for (i = 0; i < n; ++i){
+            temp = y[i] - xb[i];
+            val += temp*(tau - (temp < 0));
+        }
+        val /= n;
     }
 
     return val;
@@ -39,6 +46,8 @@ double calculate_bic(double *score, int *param, int model, double gamma)
     if (model == 1) {
         return 2*n*(*score) + df*log(n) + 2*gamma*lchoose(q, df);
     } else if (model == 2) {
+        return 2*(*score) + df*log(n) + 2*gamma*lchoose(q, df);
+    } else if (model == 3) {
         return 2*(*score) + df*log(n) + 2*gamma*lchoose(q, df);
     } else {
         return 2*n*(*score) + df*log(n) + 2*gamma*lchoose(q, df);
@@ -207,7 +216,7 @@ void unmormalized(double *beta, double *unbeta, int *parent, int *indexi,
 
 void der(double *x, double *y, double *d, double *meanx, double *sdx, int model, 
     int *param, double *residual, double *xb, int isq, int *stautus, int *active,
-    int hierarchy) 
+    int hierarchy, double tau) 
 {
     // calculate the 1st order Taylor Formula.
     int i, j, k, c, m, ell=0;
@@ -329,14 +338,74 @@ void der(double *x, double *y, double *d, double *meanx, double *sdx, int model,
                 }
             }
         }
+    } else if(model == 3){
+        temp = 0.0;
+        for (i = 0; i < n; ++i) {
+            residual[i] = tau - (y[i] - xb[i] < 0);
+            temp += residual[i];
+        }
+        for (c = 0; c < p; ++c) {
+            x_i = x + c*n;
+            d[c] = 0.0;
+            for (j = 0; j < n; ++j)
+                d[c] -= x_i[j] * residual[j];
+            d[c] = (d[c] + meanx[c]*temp)/(n*sdx[c]);
+        }
+        // isq = 1 if quadratic terms are considered, and isq = 0 while not.
+        if (hierarchy)
+        {
+            // Strong hierarchy
+            if (!nm) return;
+            for (i = 0; i <= active[nm-1]; ++i){
+                x_i = x + i*n;
+                if (i < active[ell])
+                {
+                    m = (2*(p+isq)-i)*(i+1)/2-i-1;
+                    for (j = ell; j < nm; ++j) {
+                        x_j = x + active[j]*n;
+                        c = m + active[j];
+                        d[c] = 0.0;
+                        for (k = 0; k < n; ++k)
+                            d[c] -= x_i[k]*x_j[k]*residual[k];
+                        d[c] = (d[c] + meanx[c]*temp)/(n*sdx[c]);
+                    }
+                } else {
+                    j = i-isq+1;
+                    c = (2*(p+isq)-i)*(i+1)/2-isq;
+                    for (; j < p; ++j) {
+                        x_j = x + j*n;
+                        d[c] = 0.0;
+                        for (k = 0; k < n; ++k)
+                            d[c] -= x_i[k]*x_j[k]*residual[k];
+                        d[c] = (d[c] + meanx[c]*temp)/(n*sdx[c]);
+                        c++;
+                    }
+                    ell++;
+                }
+            }
+        } else {
+            // Weak hierarchy
+            if (!nm) return;
+            for (i = 0; i < p; ++i){
+                x_i = x + i*n;
+                for (j = i-isq+1; j < p; ++j) {
+                    x_j = x + j*n;
+                    d[c] = 0.0;
+                    for (k = 0; k < n; ++k)
+                        d[c] -= x_i[k]*x_j[k]*residual[k];
+                    d[c] = (d[c] + meanx[c]*temp)/(n*sdx[c]);
+                    c++;
+                }
+            }
+        }
     }
 }
 
 // take an initial step
 void Initial(x, y, xb, beta, d, w, param, model, eps, lambda, losses, direction, 
-    active, bic, df, meanx, sdx, residual, isq, stautus, hierarchy, gamma)
+    active, bic, df, meanx, sdx, residual, isq, stautus, hierarchy, gamma, tau)
 double *x, *y, *xb, *beta, *d, *w, eps, *lambda, *losses, *bic;
-double *meanx, *sdx, *residual, gamma;
+double *meanx, *sdx, *residual, gamma, tau;
 int *param, model, *direction, *active, *df, isq, *stautus, hierarchy;
 {
     // d doesn't need initial value
@@ -346,7 +415,7 @@ int *param, model, *direction, *active, *df, isq, *stautus, hierarchy;
 
     // calculate the derivative
     der(x, y, d, meanx, sdx, model, param, residual, xb, isq, stautus, active,
-        hierarchy);
+        hierarchy, tau);
 
     // find a forward direction
     temp = 0.0;
@@ -364,12 +433,12 @@ int *param, model, *direction, *active, *df, isq, *stautus, hierarchy;
     if (d[k] > 0.0) value *= -1.0;
     *beta = value;
 
-    temp = Loss(y, xb, model, param, stautus);
+    temp = Loss(y, xb, model, param, stautus, tau);
     xi = x + k*n;
     value /= sdx[k];
     for (i = 0; i < n; ++i)
         xb[i] += (xi[i]-meanx[k])*value;
-    *losses = Loss(y, xb, model, param, stautus);
+    *losses = Loss(y, xb, model, param, stautus, tau);
     *lambda = (temp - *losses)/eps;
 
     *direction = 1;
@@ -383,9 +452,9 @@ int *param, model, *direction, *active, *df, isq, *stautus, hierarchy;
 // try a backward step
 int Backward(x, y, xb, beta, d, betanew, weight, param, model, eps, lambda, 
     losses, parent, xi, back, hierarchy, active, direction, bic, df, 
-    child, meanx, sdx, residual, isq, stautus, gamma)
+    child, meanx, sdx, residual, isq, stautus, gamma, tau)
 double *x, *y, *xb, *beta, *d, *betanew, *weight, eps, *lambda, *losses, xi;
-double *bic, *meanx, *sdx, *residual, gamma;
+double *bic, *meanx, *sdx, *residual, gamma, tau;
 int *param, model, *parent, back, hierarchy, *active, *direction;
 int *df, *child, isq, *stautus;
 {
@@ -398,7 +467,7 @@ int *df, *child, isq, *stautus;
 
     // calculate the first order Taylor's Formula
     der(x, y, d, meanx, sdx, model, param, residual, xb, isq, stautus, active,
-        hierarchy);
+        hierarchy, tau);
 
     // saves active set's first order Taylor's Formula in ell and sort it.
     for (i = 0; i < ns; ++i) {
@@ -442,7 +511,7 @@ int *df, *child, isq, *stautus;
         for (i = 0; i < n; ++i)
             residual[i] = xb[i] + (x_i[i]*x_j[i] - meanx[k]) * value;
     }
-    lossafter = Loss(y, residual, model, param, stautus);
+    lossafter = Loss(y, residual, model, param, stautus, tau);
 
     if (lossafter - *losses - (*lambda)*eps < -1.0*xi)
     {
@@ -498,14 +567,14 @@ void compare(double *temp, double value, int *k, int h12, int *k2, int t,
 // take an forward step
 void Forward(x, y, xb, beta, d, weight, param, model, eps, lambda, losses, 
     parent, xi, back, hierarchy, direction, active, bic, df, child, meanx, 
-    sdx, residual, isq, stautus, gamma)
+    sdx, residual, isq, stautus, gamma, tau)
 double *x, *y, *xb, *beta, *d, *weight, eps, *lambda, *losses, xi, *bic;
-double *meanx, *sdx, *residual, gamma;
+double *meanx, *sdx, *residual, gamma, tau;
 int *param, model, *parent, back, hierarchy, *direction, *active;
 int *df, *child, isq, *stautus;
 {
     // d doesn't need initial value
-    int i, j, h12, k = -1, parenti = -1, parentj = -1, k2 = -1;
+    int i, j, h12, k = -1, parenti = -1, parentj = -1, k2 = -1, F_t_mark = 0;
     int n = param[0], p = param[1], ns = param[3], nm = param[4];
     double value, value2, value3, temp, *x_i, *x_j;
     int r, ell = 0;
@@ -514,7 +583,7 @@ int *df, *child, isq, *stautus;
     // beta has been assigned in backward
     if (!back) {
         der(x, y, d, meanx, sdx, model, param, residual, xb, isq, stautus, 
-            active, hierarchy);
+            active, hierarchy, tau);
         for (i = 0; i < ns; ++i) beta[i] = beta[i-ns];
     }
 
@@ -692,7 +761,15 @@ int *df, *child, isq, *stautus;
                 if (active[i] < k) continue;
                 if (active[i] == k)
                 {
-                    beta[i] += value;
+                    if ((k < p) && (d[k]*beta[i] > 0) && (child[i] != 0) && (fabs(beta[i]) == eps))
+                    {
+                        if (hierarchy || !b_qlf(k, param, active, parent, child)) {
+                            beta[i] += 2.0*value;
+                            F_t_mark = 1;
+                        }
+                    } else {
+                        beta[i] += value;
+                    }
                     df[1] = df[0];
                 } else {
                     for (j = ns; j > i; --j)
@@ -737,10 +814,10 @@ int *df, *child, isq, *stautus;
     }
 
     // update lambda, losses, direction, bic, df
-    losses[1]    = Loss(y, xb, model, param, stautus);
+    losses[1]    = Loss(y, xb, model, param, stautus, tau);
     //direction[1] = 1;
     bic[1]       = calculate_bic(losses+1, param, model, gamma);
-    if (k2 != -1) {
+    if ((k2 != -1) || (F_t_mark == 1)) {
         temp         = (losses[0] - losses[1])/(eps*2.0);
     } else {
         temp         = (losses[0] - losses[1])/eps;
@@ -750,9 +827,9 @@ int *df, *child, isq, *stautus;
 
 int HFabs(x, y, xb, beta, d, weight, param, model, eps, lambda, losses, parent, 
     xi, back, hierarchy, direction, active, bic, df, child, meanx, sdx, residual, 
-    isq, stautus, sparse_i, sparse_j, iter, stoping, lam_m, max_s, gamma)
+    isq, stautus, sparse_i, sparse_j, iter, stoping, lam_m, max_s, gamma, tau)
 double *x, *y, *xb, *beta, *d, *weight, eps, *lambda, *losses, xi, *bic;
-double *meanx, *sdx, *residual, lam_m, gamma;
+double *meanx, *sdx, *residual, lam_m, gamma, tau;
 int *param, model, *parent, back, hierarchy, *direction, *active, stoping;
 int *df, *child, isq, *stautus, *sparse_i, *sparse_j, *iter, max_s;
 {
@@ -762,7 +839,7 @@ int *df, *child, isq, *stautus, *sparse_i, *sparse_j, *iter, max_s;
 
     // step 1: initial step (forward)
     Initial(x, y, xb, beta, d, weight, param, model, eps, lambda, losses, direction, 
-        active, bic, df, meanx, sdx, residual, isq, stautus, hierarchy, gamma);
+        active, bic, df, meanx, sdx, residual, isq, stautus, hierarchy, gamma, tau);
     int tt_act_b = 0;
     int tt_act_a = 0;
     usi(sparse_i, sparse_j, &tt_act_b, &tt_act_a, active, param[3], 0);
@@ -772,12 +849,12 @@ int *df, *child, isq, *stautus, *sparse_i, *sparse_j, *iter, max_s;
     {
         k = Backward(x, y, xb, beta+tt_act_b, d, beta+tt_act_a, weight, param, 
             model, eps, lambda+i, losses+i, parent, xi, back, hierarchy, active, 
-            direction+i, bic+i, df+i, child, meanx, sdx, residual, isq, stautus, gamma);
+            direction+i, bic+i, df+i, child, meanx, sdx, residual, isq, stautus, gamma, tau);
         if (k)
         {
             Forward(x, y, xb, beta+tt_act_a, d, weight, param, model, eps, 
                 lambda+i, losses+i, parent, xi, back, hierarchy, direction+i, 
-                active, bic+i, df+i, child, meanx, sdx, residual, isq, stautus, gamma);
+                active, bic+i, df+i, child, meanx, sdx, residual, isq, stautus, gamma, tau);
         }
         usi(sparse_i, sparse_j, &tt_act_b, &tt_act_a, active, param[3], i+1);
 
@@ -895,7 +972,7 @@ int b_qlf_GE(int k, int *param, int *active, int *parent, int *child)
 }
 
 void der_GE(double *x, double *z, double *y, double *d, double *meanx, double *sdx, int model, 
-    int *param, double *residual, double *xb, int *stautus, int hierarchy, int *active) 
+    int *param, double *residual, double *xb, int *stautus, int hierarchy, int *active, double tau) 
 {
     // calculate the 1st order Taylor Formula.
     int i, j, k, c, ellx=0, ellz=0;
@@ -1038,14 +1115,83 @@ void der_GE(double *x, double *z, double *y, double *d, double *meanx, double *s
                 }
             }
         }
-    }
+    } else if(model == 1){
+        temp = 0.0;
+        for (i = 0; i < n; ++i) {
+            residual[i] = tau - (y[i] - xb[i] < 0);
+            temp += residual[i];
+        }
+        for (c = 0; c < px; ++c) {
+            x_i = x + c*n;
+            d[c] = 0.0;
+            for (j = 0; j < n; ++j)
+                d[c] -= x_i[j] * residual[j];
+            d[c] = (d[c] + meanx[c]*temp)/(n*sdx[c]);
+        }
+        for (; c < px+pz; ++c) {
+            x_i = z + (c-px)*n;
+            d[c] = 0.0;
+            for (j = 0; j < n; ++j)
+                d[c] -= x_i[j] * residual[j];
+            d[c] = (d[c] + meanx[c]*temp)/(n*sdx[c]);
+        }
+        if (hierarchy) {
+            // Strong hierarchy
+            for (i = 0; i < px; ++i)
+            {
+                x_i = x + i*n;
+                if ( (ellx == dfx) || (i < active[ellx]) )
+                {
+                    //ellz = px + pz + i*pz - px;
+                    ellz = (i+1)*pz;
+                    for (j = dfx; j < dfz+dfx; ++j)
+                    {
+                        x_j = z + (active[j]-px)*n;
+                        c = ellz + active[j];
+                        d[c] = 0.0;
+                        for (k = 0; k < n; ++k)
+                            d[c] -= x_i[k]*x_j[k] * residual[k];
+                        d[c] = (d[c] + meanx[c]*temp)/(n*sdx[c]);
+                    }
+                } else {
+                    c = px + pz + i*pz;
+                    for (j = 0; j < pz; ++j)
+                    {
+                        x_j = z + j*n;
+                        d[c] = 0.0;
+                        for (k = 0; k < n; ++k)
+                            d[c] -= x_i[k]*x_j[k] * residual[k];
+                        d[c] = (d[c] + meanx[c]*temp)/(n*sdx[c]);
+                        c++;
+                    }
+                    ellx++;
+                }
+            }
+        } else {
+            // Weak hierarchy
+            for (i = 0; i < px; ++i)
+            {
+                x_i = x + i*n;
+                for (j = 0; j < pz; ++j)
+                {
+                    x_j = z + j*n;
+                    d[c] = 0.0;
+                    for (k = 0; k < n; ++k)
+                        d[c] -= x_i[k]*x_j[k] * residual[k];
+                    d[c] = (d[c] + meanx[c]*temp)/(n*sdx[c]);
+                    c++;
+                }
+            }
+            
+        }
+    } 
 }
 
 // take an initial step
 void Initial_GE(x, z, y, xb, beta, d, w, param, model, eps, lambda, losses, direction, 
-    active, bic, df, meanx, sdx, residual, stautus, hierarchy, gamma)
+    active, bic, df, meanx, sdx, residual, stautus, hierarchy, gamma, tau)
 double *x, *z, *y, *xb, *beta, *d, *w, eps, *lambda, *losses, *bic;
-double *meanx, *sdx, *residual, gamma;
+double *meanx, *sdx, *residual, gamma, tau;
 int *param, model, *direction, *active, *df, *stautus, hierarchy;
 {
     // d doesn't need initial value
@@ -1054,7 +1200,7 @@ int *param, model, *direction, *active, *df, *stautus, hierarchy;
     double value, temp, *xi;
 
     // calculate the derivative
-    der_GE(x, z, y, d, meanx, sdx, model, param, residual, xb, stautus, hierarchy, active);
+    der_GE(x, z, y, d, meanx, sdx, model, param, residual, xb, stautus, hierarchy, active, tau);
 
     // find a forward direction
     temp = 0.0;
@@ -1072,7 +1218,7 @@ int *param, model, *direction, *active, *df, *stautus, hierarchy;
     if (d[k] > 0.0) value *= -1.0;
     *beta = value;
 
-    temp = Loss(y, xb, model, param, stautus);
+    temp = Loss(y, xb, model, param, stautus, tau);
     if (k < px) {
         xi = x + k*n;
         param[4] = 1;
@@ -1083,7 +1229,7 @@ int *param, model, *direction, *active, *df, *stautus, hierarchy;
     value /= sdx[k];
     for (i = 0; i < n; ++i)
         xb[i] += (xi[i]-meanx[k])*value;
-    *losses = Loss(y, xb, model, param, stautus);
+    *losses = Loss(y, xb, model, param, stautus, tau);
     *lambda = (temp - *losses)/eps;
 
     *direction = 1;
@@ -1096,9 +1242,9 @@ int *param, model, *direction, *active, *df, *stautus, hierarchy;
 // try a backward step
 int Backward_GE(x, z, y, xb, beta, d, betanew, weight, param, model, eps, lambda, 
     losses, parent, xi, back, hierarchy, active, direction, bic, df, 
-    child, meanx, sdx, residual, stautus, gamma)
+    child, meanx, sdx, residual, stautus, gamma, tau)
 double *x, *z, *y, *xb, *beta, *d, *betanew, *weight, eps, *lambda, *losses, xi;
-double *bic, *meanx, *sdx, *residual, gamma;
+double *bic, *meanx, *sdx, *residual, gamma, tau;
 int *param, model, *parent, back, hierarchy, *active, *direction;
 int *df, *child, *stautus;
 {
@@ -1111,7 +1257,7 @@ int *df, *child, *stautus;
     double value, *x_i, *x_j, ell[ns], lossafter;
 
     // calculate the first order Taylor's Formula
-    der_GE(x, z, y, d, meanx, sdx, model, param, residual, xb, stautus, hierarchy, active);
+    der_GE(x, z, y, d, meanx, sdx, model, param, residual, xb, stautus, hierarchy, active, tau);
 
     // saves active set's first order Taylor's Formula in ell and sort it.
     for (i = 0; i < ns; ++i) {
@@ -1159,7 +1305,7 @@ int *df, *child, *stautus;
         for (i = 0; i < n; ++i)
             residual[i] = xb[i] + (x_i[i]*x_j[i] - meanx[k]) * value;
     }
-    lossafter = Loss(y, residual, model, param, stautus);
+    lossafter = Loss(y, residual, model, param, stautus, tau);
 
     if (lossafter - *losses - (*lambda)*eps < -1.0*xi)
     {
@@ -1205,14 +1351,14 @@ int *df, *child, *stautus;
 // take an forward step
 void Forward_GE(x, z, y, xb, beta, d, weight, param, model, eps, lambda, losses, 
     parent, xi, back, hierarchy, direction, active, bic, df, child, meanx, 
-    sdx, residual, stautus, gamma)
+    sdx, residual, stautus, gamma, tau)
 double *x, *z, *y, *xb, *beta, *d, *weight, eps, *lambda, *losses, xi, *bic;
-double *meanx, *sdx, *residual, gamma;
+double *meanx, *sdx, *residual, gamma, tau;
 int *param, model, *parent, back, hierarchy, *direction, *active;
 int *df, *child, *stautus;
 {
     // d doesn't need initial value
-    int i, j, h12, ellz = 0, ellx = 0, k = -1, k2 = -1;
+    int i, j, h12, ellz = 0, ellx = 0, k = -1, k2 = -1, F_t_mark = 0;
     int n = param[0], px = param[1], pz = param[5], p = px+pz;
     int ns = param[3], dfx = param[4], dfz = param[6];
     int parenti = -1, parentj = -1;
@@ -1221,7 +1367,7 @@ int *df, *child, *stautus;
     // d has calculated in Backward.
     // beta has been assigned in backward
     if (!back) {
-        der_GE(x, z, y, d, meanx, sdx, model, param, residual, xb, stautus, hierarchy, active);
+        der_GE(x, z, y, d, meanx, sdx, model, param, residual, xb, stautus, hierarchy, active, tau);
         for (i = 0; i < ns; ++i) beta[i] = beta[i-ns];
     }
 
@@ -1394,7 +1540,15 @@ int *df, *child, *stautus;
             if (active[i] < k) continue;
             if (active[i] == k)
             {
-                beta[i] += value;
+                if ((k < p) && (d[k]*beta[i] > 0) && (child[i] != 0) && (fabs(beta[i]) == eps))
+                {
+                    if (hierarchy || (b_qlf_GE(k, param, active, parent, child) == 0)) {
+                        beta[i] += 2.0*value;
+                        F_t_mark = 1;
+                    }
+                } else {
+                    beta[i] += value;
+                }
                 df[1] = df[0];
                 ellz = -1;
             }
@@ -1449,10 +1603,10 @@ int *df, *child, *stautus;
     }
 
     // update lambda, losses, direction, bic, df
-    losses[1]    = Loss(y, xb, model, param, stautus);
+    losses[1]    = Loss(y, xb, model, param, stautus, tau);
     //direction[1] = 1;
     bic[1]       = calculate_bic(losses+1, param, model, gamma);
-    if (k2 != -1) {
+    if ((k2 != -1) || (F_t_mark == 1)) {
         temp         = (losses[0] - losses[1])/(eps*2.0);
     } else {
         temp         = (losses[0] - losses[1])/eps;
@@ -1462,9 +1616,9 @@ int *df, *child, *stautus;
 
 int HFabs_GE(x, z, y, xb, beta, d, weight, param, model, eps, lambda, losses, 
     parent, xi, back, hierarchy, direction, active, bic, df, child, meanx, 
-    sdx, residual, stautus, sparse_i, sparse_j, iter, stoping, lam_m, max_s, gamma)
+    sdx, residual, stautus, sparse_i, sparse_j, iter, stoping, lam_m, max_s, gamma, tau)
 double *x, *z, *y, *xb, *beta, *d, *weight, eps, *lambda, *losses, xi, *bic;
-double *meanx, *sdx, *residual, lam_m, gamma;
+double *meanx, *sdx, *residual, lam_m, gamma, tau;
 int *param, model, *parent, back, hierarchy, *direction, *active, *iter;
 int *df, *child, *stautus, *sparse_i, *sparse_j, stoping, max_s;
 {
@@ -1484,12 +1638,12 @@ int *df, *child, *stautus, *sparse_i, *sparse_j, stoping, max_s;
     {
         k = Backward_GE(x, z, y, xb, beta+tt_act_b, d, beta+tt_act_a, weight, param, 
             model, eps, lambda+i, losses+i, parent, xi, back, hierarchy, active, 
-            direction+i, bic+i, df+i, child, meanx, sdx, residual, stautus, gamma);
+            direction+i, bic+i, df+i, child, meanx, sdx, residual, stautus, gamma, tau);
         if (k)
         {
             Forward_GE(x, z, y, xb, beta+tt_act_a, d, weight, param, model, eps, 
                 lambda+i, losses+i, parent, xi, back, hierarchy, direction+i, 
-                active, bic+i, df+i, child, meanx, sdx, residual, stautus, gamma);
+                active, bic+i, df+i, child, meanx, sdx, residual, stautus, gamma, tau);
         }
         usi(sparse_i, sparse_j, &tt_act_b, &tt_act_a, active, param[3], i+1);
 
@@ -1517,16 +1671,17 @@ int *df, *child, *stautus, *sparse_i, *sparse_j, stoping, max_s;
 
 SEXP Hierarchy_Fabs(SEXP X, SEXP Z, SEXP Y, SEXP Weight, SEXP Model, SEXP Epsilon, SEXP Lam_min, 
     SEXP Xi, SEXP Back, SEXP Stoping, SEXP Iter, SEXP Hierarchy, SEXP Param, 
-    SEXP Max_S, SEXP MeanY, SEXP Isquadratic, SEXP Status, SEXP GE, SEXP Gamma)
+    SEXP Max_S, SEXP MeanY, SEXP Isquadratic, SEXP Status, SEXP GE, SEXP Gamma, SEXP TAU)
 {
     int i, n, p, pz, q;
-    double *x, *z, *y, *weight, eps, lam_m, xi, *meanx, *sdx, gamma;
+    double *x, *z, *y, *weight, eps, lam_m, xi, *meanx, *sdx, gamma, tau;
     int *param, model, back, stoping, iter, hierarchy, max_s, *stautus, isq, ge;
     const char *modeltype = CHAR(asChar(Model));
     const char *Constrain = CHAR(asChar(Hierarchy));
 
     if (strcmp(modeltype, "gaussian") == 0) model = 1;
     else if (strcmp(modeltype, "cox") == 0) model = 2;
+    else if (strcmp(modeltype, "quantile") == 0) model = 3;
     else model = 1;
 
     if (strcmp(Constrain, "strong") == 0) hierarchy = 1;
@@ -1555,6 +1710,7 @@ SEXP Hierarchy_Fabs(SEXP X, SEXP Z, SEXP Y, SEXP Weight, SEXP Model, SEXP Epsilo
     sdx       = (double*)malloc(sizeof(double)  *q);
     ge        = INTEGER(GE)[0];
     gamma     = REAL(Gamma)[0];
+    tau       = REAL(TAU)[0];
 
     double *d, *beta, *lambda, *xb, *bic, *losses, *residual;
     int *direction, *df, *parent, *child, *active;
@@ -1580,12 +1736,12 @@ SEXP Hierarchy_Fabs(SEXP X, SEXP Z, SEXP Y, SEXP Weight, SEXP Model, SEXP Epsilo
         tt_act_a = HFabs_GE(x, z, y, xb, beta, d, weight, param, model, eps, 
             lambda, losses, parent, xi, back, hierarchy, direction, active, bic, 
             df, child, meanx, sdx, residual, stautus, sparse_i, 
-            sparse_j, &iter, stoping, lam_m, max_s, gamma);
+            sparse_j, &iter, stoping, lam_m, max_s, gamma, tau);
     } else {
         tt_act_a = HFabs(x, y, xb, beta, d, weight, param, model, eps, lambda, 
             losses, parent, xi, back, hierarchy, direction, active, bic, df, 
             child, meanx, sdx, residual, isq, stautus, sparse_i, 
-            sparse_j, &iter, stoping, lam_m, max_s, gamma);
+            sparse_j, &iter, stoping, lam_m, max_s, gamma, tau);
     }
 
     SEXP Beta, Lambda, Direction, Loops, BIC, Loss, Df, Indexi, Indexj;
