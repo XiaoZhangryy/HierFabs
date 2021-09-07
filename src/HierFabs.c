@@ -4,6 +4,7 @@
 #include <Rmath.h>
 #include <stdio.h>
 #include <stdlib.h>
+#define QEPS 1e-6
 
 // Loss function
 double Loss(double *y, double *xb, int model, int *param, int *stautus, double tau)
@@ -32,6 +33,13 @@ double Loss(double *y, double *xb, int model, int *param, int *stautus, double t
             val += temp*(tau - (temp < 0));
         }
         val /= n;
+    } else if (model == 4) {
+        // for logistic regression
+        for (i = 0; i < n; ++i){
+            temp = -y[i] * xb[i];
+            val += log(1.0 + exp(temp));
+        }
+        val /= n;
     }
 
     return val;
@@ -48,7 +56,9 @@ double calculate_bic(double *score, int *param, int model, double gamma)
     } else if (model == 2) {
         return 2*(*score) + df*log(n) + 2*gamma*lchoose(q, df);
     } else if (model == 3) {
-        return 2*(*score) + df*log(n) + 2*gamma*lchoose(q, df);
+        return 2*n*(*score) + df*log(n) + 2*gamma*lchoose(q, df);
+    } else if (model == 4) {
+        return 2*n*(*score) + df*log(n) + 2*gamma*lchoose(q, df);
     } else {
         return 2*n*(*score) + df*log(n) + 2*gamma*lchoose(q, df);
     }
@@ -200,6 +210,10 @@ void unmormalized(double *beta, double *unbeta, int *parent, int *indexi,
             intercept[i] = meany;
         } else if (model == 2) {
             intercept[i] = 0.0;
+        } else if (model == 3) {
+            intercept[i] = meany;
+        } else if (model == 4) {
+            intercept[i] = 0.0;
         } else {
             intercept[i] = meany;
         }
@@ -338,10 +352,195 @@ void der(double *x, double *y, double *d, double *meanx, double *sdx, int model,
                 }
             }
         }
-    } else if(model == 3){
+    } else if(model == 3) {
+        double BS, BSc; 
+        int *nond; // non-differentiable set
+        nond = (int*)calloc(n, sizeof(int));
+        int count = 0;
         temp = 0.0;
         for (i = 0; i < n; ++i) {
-            residual[i] = tau - (y[i] - xb[i] < 0);
+            BS = y[i] - xb[i];
+            if (fabs(BS) < QEPS) {
+                residual[i] = tau;
+                nond[count] = i;
+                count++;
+            } else if (BS < 0) {
+                residual[i] = tau - 1;
+            } else {
+                residual[i] = tau;
+            }
+            temp += residual[i];
+        }
+        for (c = 0; c < p; ++c) {
+            x_i = x + c*n;
+            d[c] = 0.0;
+            for (j = 0; j < n; ++j)
+                d[c] -= x_i[j] * residual[j];
+            if (count)
+            {
+                for (i = 0, j = 0, BS = d[c], BSc = -d[c]; j < count; ++j)
+                {
+                    if (x_i[nond[j]] > 0) {
+                        BS += x_i[nond[j]];
+                        i++;
+                    } else BSc -= x_i[nond[j]];
+                }
+                if (BSc > BS)
+                {
+                    d[c] = BS;
+                    d[c] = (d[c] + meanx[c]*(temp-i))/(n*sdx[c]);
+                } else {
+                    d[c] = -BSc;
+                    d[c] = (d[c] + meanx[c]*(temp-count+i))/(n*sdx[c]);
+                }
+            } else {
+                d[c] = (d[c] + meanx[c]*temp)/(n*sdx[c]);
+            }
+        }
+        // isq = 1 if quadratic terms are considered, and isq = 0 while not.
+        if (!count) {
+            if (hierarchy)
+            {
+                // Strong hierarchy
+                if (!nm) return;
+                for (i = 0; i <= active[nm-1]; ++i){
+                    x_i = x + i*n;
+                    if (i < active[ell])
+                    {
+                        m = (2*(p+isq)-i)*(i+1)/2-i-1;
+                        for (j = ell; j < nm; ++j) {
+                            x_j = x + active[j]*n;
+                            c = m + active[j];
+                            d[c] = 0.0;
+                            for (k = 0; k < n; ++k)
+                                d[c] -= x_i[k]*x_j[k]*residual[k];
+                            d[c] = (d[c] + meanx[c]*temp)/(n*sdx[c]);
+                        }
+                    } else {
+                        j = i-isq+1;
+                        c = (2*(p+isq)-i)*(i+1)/2-isq;
+                        for (; j < p; ++j) {
+                            x_j = x + j*n;
+                            d[c] = 0.0;
+                            for (k = 0; k < n; ++k)
+                                d[c] -= x_i[k]*x_j[k]*residual[k];
+                            d[c] = (d[c] + meanx[c]*temp)/(n*sdx[c]);
+                            c++;
+                        }
+                        ell++;
+                    }
+                }
+            } else {
+                // Weak hierarchy
+                if (!nm) return;
+                for (i = 0; i < p; ++i){
+                    x_i = x + i*n;
+                    for (j = i-isq+1; j < p; ++j) {
+                        x_j = x + j*n;
+                        d[c] = 0.0;
+                        for (k = 0; k < n; ++k)
+                            d[c] -= x_i[k]*x_j[k]*residual[k];
+                        d[c] = (d[c] + meanx[c]*temp)/(n*sdx[c]);
+                        c++;
+                    }
+                }
+            }
+        } else {
+            if (hierarchy)
+            {
+                // Strong hierarchy
+                if (!nm) return;
+                for (i = 0; i <= active[nm-1]; ++i){
+                    x_i = x + i*n;
+                    if (i < active[ell])
+                    {
+                        m = (2*(p+isq)-i)*(i+1)/2-i-1;
+                        for (j = ell; j < nm; ++j) {
+                            x_j = x + active[j]*n;
+                            c = m + active[j];
+                            d[c] = 0.0;
+                            for (k = 0; k < n; ++k)
+                                d[c] -= x_i[k]*x_j[k]*residual[k];
+                            for (m = 0, j = 0, BS = d[c], BSc = -d[c]; j < count; ++j)
+                            {
+                                if (x_i[nond[j]]*x_j[nond[j]] > 0) {
+                                    BS += x_i[nond[j]]*x_j[nond[j]];
+                                    m++;
+                                } else BSc -= x_i[nond[j]]*x_j[nond[j]];
+                            }
+                            if (BSc > BS)
+                            {
+                                d[c] = BS;
+                                d[c] = (d[c] + meanx[c]*(temp-m))/(n*sdx[c]);
+                            } else {
+                                d[c] = -BSc;
+                                d[c] = (d[c] + meanx[c]*(temp-count+m))/(n*sdx[c]);
+                            }
+                        }
+                    } else {
+                        j = i-isq+1;
+                        c = (2*(p+isq)-i)*(i+1)/2-isq;
+                        for (; j < p; ++j) {
+                            x_j = x + j*n;
+                            d[c] = 0.0;
+                            for (k = 0; k < n; ++k)
+                                d[c] -= x_i[k]*x_j[k]*residual[k];
+                            for (m = 0, j = 0, BS = d[c], BSc = -d[c]; j < count; ++j)
+                            {
+                                if (x_i[nond[j]]*x_j[nond[j]] > 0) {
+                                    BS += x_i[nond[j]]*x_j[nond[j]];
+                                    m++;
+                                } else BSc -= x_i[nond[j]]*x_j[nond[j]];
+                            }
+                            if (BSc > BS)
+                            {
+                                d[c] = BS;
+                                d[c] = (d[c] + meanx[c]*(temp-m))/(n*sdx[c]);
+                            } else {
+                                d[c] = -BSc;
+                                d[c] = (d[c] + meanx[c]*(temp-count+m))/(n*sdx[c]);
+                            }
+                            c++;
+                        }
+                        ell++;
+                    }
+                }
+            } else {
+                // Weak hierarchy
+                if (!nm) return;
+                for (i = 0; i < p; ++i){
+                    x_i = x + i*n;
+                    for (j = i-isq+1; j < p; ++j) {
+                        x_j = x + j*n;
+                        d[c] = 0.0;
+                        for (k = 0; k < n; ++k)
+                            d[c] -= x_i[k]*x_j[k]*residual[k];
+                        for (m = 0, j = 0, BS = d[c], BSc = -d[c]; j < count; ++j)
+                        {
+                            if (x_i[nond[j]]*x_j[nond[j]] > 0) {
+                                BS += x_i[nond[j]]*x_j[nond[j]];
+                                m++;
+                            } else BSc -= x_i[nond[j]]*x_j[nond[j]];
+                        }
+                        if (BSc > BS)
+                        {
+                            d[c] = BS;
+                            d[c] = (d[c] + meanx[c]*(temp-m))/(n*sdx[c]);
+                        } else {
+                            d[c] = -BSc;
+                            d[c] = (d[c] + meanx[c]*(temp-count+m))/(n*sdx[c]);
+                        }
+                        c++;
+                    }
+                }
+            }
+        }
+        
+        free(nond);
+    } else if (model == 4) {
+        temp = 0.0;
+        for (i = 0; i < n; ++i) {
+            residual[i] = y[i] * (1.0 - 1.0/(1.0+exp(-y[i]*xb[i])));
             temp += residual[i];
         }
         for (c = 0; c < p; ++c) {
@@ -1115,10 +1314,235 @@ void der_GE(double *x, double *z, double *y, double *d, double *meanx, double *s
                 }
             }
         }
-    } else if(model == 1){
+    } else if(model == 3){
+        double BS, BSc; 
+        int *nond; // non-differentiable set
+        nond = (int*)calloc(n, sizeof(int));
+        int count = 0;
         temp = 0.0;
         for (i = 0; i < n; ++i) {
-            residual[i] = tau - (y[i] - xb[i] < 0);
+            BS = y[i] - xb[i];
+            if (fabs(BS) < QEPS) {
+                residual[i] = tau;
+                nond[count] = i;
+                count++;
+            } else if (BS < 0) {
+                residual[i] = tau - 1;
+            } else {
+                residual[i] = tau;
+            }
+            temp += residual[i];
+        }
+        if (!count)
+        {
+            for (c = 0; c < px; ++c) {
+                x_i = x + c*n;
+                d[c] = 0.0;
+                for (j = 0; j < n; ++j)
+                    d[c] -= x_i[j] * residual[j];
+                d[c] = (d[c] + meanx[c]*temp)/(n*sdx[c]);
+            }
+
+            for (; c < px+pz; ++c) {
+                x_i = z + (c-px)*n;
+                d[c] = 0.0;
+                for (j = 0; j < n; ++j)
+                    d[c] -= x_i[j] * residual[j];
+                d[c] = (d[c] + meanx[c]*temp)/(n*sdx[c]);
+            }
+
+            if (hierarchy) {
+                // Strong hierarchy
+                for (i = 0; i < px; ++i)
+                {
+                    x_i = x + i*n;
+                    if ( (ellx == dfx) || (i < active[ellx]) )
+                    {
+                        //ellz = px + pz + i*pz - px;
+                        ellz = (i+1)*pz;
+                        for (j = dfx; j < dfz+dfx; ++j)
+                        {
+                            x_j = z + (active[j]-px)*n;
+                            c = ellz + active[j];
+                            d[c] = 0.0;
+                            for (k = 0; k < n; ++k)
+                                d[c] -= x_i[k]*x_j[k] * residual[k];
+                            d[c] = (d[c] + meanx[c]*temp)/(n*sdx[c]);
+                        }
+                    } else {
+                        c = px + pz + i*pz;
+                        for (j = 0; j < pz; ++j)
+                        {
+                            x_j = z + j*n;
+                            d[c] = 0.0;
+                            for (k = 0; k < n; ++k)
+                                d[c] -= x_i[k]*x_j[k] * residual[k];
+                            d[c] = (d[c] + meanx[c]*temp)/(n*sdx[c]);
+                            c++;
+                        }
+                        ellx++;
+                    }
+                }
+            } else {
+                // Weak hierarchy
+                for (i = 0; i < px; ++i)
+                {
+                    x_i = x + i*n;
+                    for (j = 0; j < pz; ++j)
+                    {
+                        x_j = z + j*n;
+                        d[c] = 0.0;
+                        for (k = 0; k < n; ++k)
+                            d[c] -= x_i[k]*x_j[k] * residual[k];
+                        d[c] = (d[c] + meanx[c]*temp)/(n*sdx[c]);
+                        c++;
+                    }
+                } 
+            }
+        } else {
+            for (c = 0; c < px; ++c) {
+                x_i = x + c*n;
+                d[c] = 0.0;
+                for (j = 0; j < n; ++j)
+                    d[c] -= x_i[j] * residual[j];
+                for (i = 0, j = 0, BS = d[c], BSc = -d[c]; j < count; ++j)
+                {
+                    if (x_i[nond[j]] > 0) {
+                        BS += x_i[nond[j]];
+                        i++;
+                    } else BSc -= x_i[nond[j]];
+                }
+                if (BSc > BS)
+                {
+                    d[c] = BS;
+                    d[c] = (d[c] + meanx[c]*(temp-i))/(n*sdx[c]);
+                } else {
+                    d[c] = -BSc;
+                    d[c] = (d[c] + meanx[c]*(temp-count+i))/(n*sdx[c]);
+                }
+            }
+
+            for (; c < px+pz; ++c) {
+                x_i = z + (c-px)*n;
+                d[c] = 0.0;
+                for (j = 0; j < n; ++j)
+                    d[c] -= x_i[j] * residual[j];
+                for (i = 0, j = 0, BS = d[c], BSc = -d[c]; j < count; ++j)
+                {
+                    if (x_i[nond[j]] > 0) {
+                        BS += x_i[nond[j]];
+                        i++;
+                    } else BSc -= x_i[nond[j]];
+                }
+                if (BSc > BS)
+                {
+                    d[c] = BS;
+                    d[c] = (d[c] + meanx[c]*(temp-i))/(n*sdx[c]);
+                } else {
+                    d[c] = -BSc;
+                    d[c] = (d[c] + meanx[c]*(temp-count+i))/(n*sdx[c]);
+                }
+            }
+
+            
+            if (hierarchy) {
+                // Strong hierarchy
+                for (i = 0; i < px; ++i)
+                {
+                    x_i = x + i*n;
+                    if ( (ellx == dfx) || (i < active[ellx]) )
+                    {
+                        //ellz = px + pz + i*pz - px;
+                        ellz = (i+1)*pz;
+                        for (j = dfx; j < dfz+dfx; ++j)
+                        {
+                            x_j = z + (active[j]-px)*n;
+                            c = ellz + active[j];
+                            d[c] = 0.0;
+                            for (k = 0; k < n; ++k)
+                                d[c] -= x_i[k]*x_j[k] * residual[k];
+                            
+                            for (k = 0, j = 0, BS = d[c], BSc = -d[c]; j < count; ++j)
+                            {
+                                if (x_i[nond[j]]*x_j[nond[j]] > 0) {
+                                    BS += x_i[nond[j]]*x_j[nond[j]];
+                                    k++;
+                                } else BSc -= x_i[nond[j]]*x_j[nond[j]];
+                            }
+                            if (BSc > BS)
+                            {
+                                d[c] = BS;
+                                d[c] = (d[c] + meanx[c]*(temp-k))/(n*sdx[c]);
+                            } else {
+                                d[c] = -BSc;
+                                d[c] = (d[c] + meanx[c]*(temp-count+k))/(n*sdx[c]);
+                            }
+                        }
+                    } else {
+                        c = px + pz + i*pz;
+                        for (j = 0; j < pz; ++j)
+                        {
+                            x_j = z + j*n;
+                            d[c] = 0.0;
+                            for (k = 0; k < n; ++k)
+                                d[c] -= x_i[k]*x_j[k] * residual[k];
+                            
+                            for (k = 0, j = 0, BS = d[c], BSc = -d[c]; j < count; ++j)
+                            {
+                                if (x_i[nond[j]]*x_j[nond[j]] > 0) {
+                                    BS += x_i[nond[j]]*x_j[nond[j]];
+                                    k++;
+                                } else BSc -= x_i[nond[j]]*x_j[nond[j]];
+                            }
+                            if (BSc > BS)
+                            {
+                                d[c] = BS;
+                                d[c] = (d[c] + meanx[c]*(temp-k))/(n*sdx[c]);
+                            } else {
+                                d[c] = -BSc;
+                                d[c] = (d[c] + meanx[c]*(temp-count+k))/(n*sdx[c]);
+                            }
+                            c++;
+                        }
+                        ellx++;
+                    }
+                }
+            } else {
+                // Weak hierarchy
+                for (i = 0; i < px; ++i)
+                {
+                    x_i = x + i*n;
+                    for (j = 0; j < pz; ++j)
+                    {
+                        x_j = z + j*n;
+                        d[c] = 0.0;
+                        for (k = 0; k < n; ++k)
+                            d[c] -= x_i[k]*x_j[k] * residual[k];
+                            
+                        for (k = 0, j = 0, BS = d[c], BSc = -d[c]; j < count; ++j)
+                        {
+                            if (x_i[nond[j]]*x_j[nond[j]] > 0) {
+                                BS += x_i[nond[j]]*x_j[nond[j]];
+                                k++;
+                            } else BSc -= x_i[nond[j]]*x_j[nond[j]];
+                        }
+                        if (BSc > BS)
+                        {
+                            d[c] = BS;
+                            d[c] = (d[c] + meanx[c]*(temp-k))/(n*sdx[c]);
+                        } else {
+                            d[c] = -BSc;
+                            d[c] = (d[c] + meanx[c]*(temp-count+k))/(n*sdx[c]);
+                        }
+                        c++;
+                    }
+                } 
+            }
+        }
+    } else if (model == 4) {
+        temp = 0.0;
+        for (i = 0; i < n; ++i) {
+            residual[i] = y[i] * (1.0 - 1.0/(1.0+exp(-y[i]*xb[i])));
             temp += residual[i];
         }
         for (c = 0; c < px; ++c) {
@@ -1184,7 +1608,7 @@ void der_GE(double *x, double *z, double *y, double *d, double *meanx, double *s
             }
             
         }
-    } 
+    }
 }
 
 // take an initial step
@@ -1682,6 +2106,7 @@ SEXP Hierarchy_Fabs(SEXP X, SEXP Z, SEXP Y, SEXP Weight, SEXP Model, SEXP Epsilo
     if (strcmp(modeltype, "gaussian") == 0) model = 1;
     else if (strcmp(modeltype, "cox") == 0) model = 2;
     else if (strcmp(modeltype, "quantile") == 0) model = 3;
+    else if (strcmp(modeltype, "logistic") == 0) model = 4;
     else model = 1;
 
     if (strcmp(Constrain, "strong") == 0) hierarchy = 1;

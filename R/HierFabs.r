@@ -3,7 +3,7 @@
 #' @useDynLib HierFabs, .registration = TRUE
 #' @export
 #' @param G Gene matrix, each row is an observation vector.
-#' @param y Response variable.
+#' @param y Response variable. For logistic regression model, y takes value at 1 and -1. 
 #' @param E An optional environment matrix. If Z is given, the interactions between environment and gene are of interest. Otherwise, the gene-gene interactions are of interest.
 #' @param weight An optional weights. Default is 1 for each observation.
 #' @param model A character string representing one of the built-in models. 'gaussian' for linear model and 'cox' for cox model.
@@ -84,7 +84,7 @@
 #' y.pred.ge.w$c.index
 #' print(fit.ge.weak)
 
-HierFabs = function(G, y, E, weight = NULL, model = c("gaussian", "cox", "quantile"), back = TRUE,
+HierFabs = function(G, y, E, weight = NULL, model = c("gaussian", "cox", "quantile", "logistic"), back = TRUE,
   stoping = TRUE, eps = 0.01, xi = 10^-6, iter = 3000, lambda.min = NULL,
   hier = c("strong", "weak"), max_s = NULL, diagonal = FALSE, status = NULL, gamma = NULL, 
   tau = NULL)
@@ -117,7 +117,10 @@ HierFabs = function(G, y, E, weight = NULL, model = c("gaussian", "cox", "quanti
   hier = match.arg(hier)
   model     = match.arg(model)
   meany     = mean(y)
-  y         = y - meany
+  if (model != "logistic") {
+    y = y - meany
+  }
+  
 
   if (is.null(max_s))  {
     tmp   = min(n, q)
