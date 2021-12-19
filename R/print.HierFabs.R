@@ -79,21 +79,26 @@ print.HierFabs <- function(x, digits = max(getOption("digits")-2,3), ...) {
           if(c > n.inter) break
         }
       }
+      
+      interaction = active[active>pG]
+      cols = unique(parients[2,])
+      coe  = matrix(0, length(main.effect), length(cols)+1)
+      rownames(coe) = x$G.names[main.effect]
+      colnames(coe) = c("main effect",x$G.names[cols])
+      
+      coe[,1] = beta[main.effect]
+      loc = matrix(NA, nrow(parients), ncol(parients))
+      loc[1,] = sapply(parients[1,], function(t) which(main.effect==t))
+      loc[2,] = sapply(parients[2,], function(t) which(cols==t)+1)
+      for (i in 1:ncol(loc)) {
+        coe[loc[1,i], loc[2,i]] = beta[interaction[i]]
+      }
+    } else {
+      coe  = matrix(0, length(main.effect), 1)
+      coe[,1] = beta[main.effect]
     }
 
-    interaction = active[active>pG]
-    cols = unique(parients[2,])
-    coe  = matrix(0, length(main.effect), length(cols)+1)
-    rownames(coe) = x$G.names[main.effect]
-    colnames(coe) = c("main effect",x$G.names[cols])
-
-    coe[,1] = beta[main.effect]
-    loc = matrix(NA, nrow(parients), ncol(parients))
-    loc[1,] = sapply(parients[1,], function(t) which(main.effect==t))
-    loc[2,] = sapply(parients[2,], function(t) which(cols==t)+1)
-    for (i in 1:ncol(loc)) {
-      coe[loc[1,i], loc[2,i]] = beta[interaction[i]]
-    }
+    
   }
   # coe = as(coe, "sparseMatrix")
   # class(coe) <- "HierFabs"
