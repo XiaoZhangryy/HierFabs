@@ -96,6 +96,8 @@ print.HierFabs <- function(x, digits = max(getOption("digits")-2,3), ...) {
     } else {
       coe  = matrix(0, length(main.effect), 1)
       coe[,1] = beta[main.effect]
+      rownames(coe) = x$G.names[main.effect]
+      colnames(coe) = c("main effect")
     }
 
     
