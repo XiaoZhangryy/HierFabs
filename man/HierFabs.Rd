@@ -21,7 +21,8 @@ HierFabs(
   diagonal = FALSE,
   status = NULL,
   gamma = NULL,
-  tau = NULL
+  tau = NUL,
+  criteria = c("EBIC", "BIC")
 )
 }
 \arguments{
@@ -58,6 +59,8 @@ HierFabs(
 \item{gamma}{A tuning parameter in EBIC.}
 
 \item{tau}{parameter for quantile regression.}
+
+\item{criteria}{The criteria used to select the optimal solution.}
 }
 \value{
 A list.

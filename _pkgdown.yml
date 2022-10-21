@@ -1,0 +1,8 @@
+url: https://github.com/XiaoZhangryy/HierFabs
+template:
+  bootstrap: 5
+development:
+  mode: auto
+deploy:
+  install_metadata: true
+

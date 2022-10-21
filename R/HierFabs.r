@@ -19,6 +19,7 @@
 #' @param status A censoring indicator.
 #' @param gamma A tuning parameter in EBIC.
 #' @param tau parameter for quantile regression.
+#' @param criteria The criteria used to select the optimal solution.
 #'
 #' @return A list.
 #' \itemize{
@@ -87,7 +88,7 @@
 HierFabs = function(G, y, E, weight = NULL, model = c("gaussian", "cox", "quantile", "logistic"), back = TRUE,
   stoping = TRUE, eps = 0.01, xi = 10^-6, iter = 3000, lambda.min = NULL,
   hier = c("strong", "weak"), max_s = NULL, diagonal = FALSE, status = NULL, gamma = NULL, 
-  tau = NULL)
+  tau = NUL, criteria = c("EBIC", "BIC"))
 {
   n  = nrow(G)
   px = ncol(G)
@@ -115,6 +116,7 @@ HierFabs = function(G, y, E, weight = NULL, model = c("gaussian", "cox", "quanti
 
   param     = c(n, px, q, 0, 0, pz, 0)
   hier = match.arg(hier)
+  criteria = match.arg(criteria)
   model     = match.arg(model)
   meany     = mean(y)
   if (model != "logistic") {
@@ -162,8 +164,16 @@ HierFabs = function(G, y, E, weight = NULL, model = c("gaussian", "cox", "quanti
                as.numeric(gamma),
                as.numeric(tau) )
 
-  opt      = which.min(fit$bic)
   theta <- sparseMatrix(fit$index_i, fit$index_j, x = fit$beta, dims = c(q, fit$iter), index1 = FALSE)
+  if (criteria== "BIC") {
+    fit$df = fit$df/2 + Matrix::colSums(theta[1:(px+pz),]!=0)/2
+    if (model == "cox") {
+      fit$bic = 2*fit$loss+fit$df*log(n)
+    } else {
+      fit$bic = 2*n*fit$loss+fit$df*log(n)
+    }
+  }
+  opt      = which.min(fit$bic)
   opttheta = theta[,opt,drop=FALSE]
 
   val = list(theta     = theta,

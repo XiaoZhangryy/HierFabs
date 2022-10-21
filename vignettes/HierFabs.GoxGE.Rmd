@@ -1,0 +1,86 @@
+---
+title: 'HierFabs: SKCM Data Analysis with Cox-GE model'
+author: "Xiao Zhang"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{HierFabs: SKCM Data Analysis with Cox-GE model}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  tidy = TRUE,
+  fig.width = 11,
+  tidy.opts = list(width.cutoff = 95),
+  message = FALSE,
+  warning = FALSE,
+  time_it = TRUE
+)
+all_times <- list()  # store the time for each chunk
+knitr::knit_hooks$set(time_it = local({
+  now <- NULL
+  function(before, options) {
+    if (before) {
+      now <<- Sys.time()
+    } else {
+      res <- difftime(Sys.time(), now, units = "secs")
+      all_times[[options$label]] <<- res
+    }
+  }
+}))
+```
+  
+This vignette introduces the `HierFabs` workflow for the analysis of the skin cutaneous melanoma (SKCM) dataset downloaded from The Cancer Genome Atlas [TCGA](https://tcga-data.nci.nih.gov), which contains disease outcomes, environmental factors, and high-dimensional gene expressions. The goal of analysis is to identify interactions that are associated with the prognosis of SKCM.
+
+We demonstrate the use of `HierFabs` to the SKCM data that are [here](https://github.com/XiaoZhangryy/HierFabs/tree/master/vignettes_data), which can be downloaded to the current working path by the following command:
+```{r eval=FALSE}
+githubURL <- "https://github.com/XiaoZhangryy/HierFabs/blob/master/vignettes_data/cleaned_menaloma_Data.rda?raw=true"
+download.file(githubURL,"cleaned_menaloma_Data.rda",mode='wb')
+```
+
+The outcome of interest is overall survival. After removing samples with missing survival time and genes with minimal expression variations, we obtain 17,944 gene expressions on 253 patients. For gene expression measurements, the top 2,000 are screened out for downstream analysis (Jiang et al. 2016). Each gene expression is standardized to have mean zero and standard deviation one. 
+
+The package can be loaded with the command:
+```{r  eval = TRUE}
+library(HierFabs)
+library(Matrix)
+```
+
+Then load datasets to R 
+```{r  eval = TRUE}
+load("cleaned_menaloma_Data.rda")
+```
+
+## Fit a Cox model with gene-environment interaction under weak hierarchy constraint. 
+```{r  eval = TRUE}
+y      = data$y
+status = data$status
+E      = as.matrix(data$E)
+G      = as.matrix(data$G)
+fit <- HierFabs(E, y, G, model="cox", eps=0.01, hier="weak", status=status, diagonal=TRUE, max_s=40, criteria="BIC")
+```
+
+Then, we can use the `print` function to show the result. 
+```{r  eval = TRUE}
+print(fit)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+## Session information
+```{r  eval = TRUE}
+sessionInfo()
+```

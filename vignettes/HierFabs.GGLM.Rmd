@@ -1,0 +1,84 @@
+---
+title: 'HierFabs: SKCM Data Analysis with LM-GG model'
+author: "Xiao Zhang"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{HierFabs: SKCM Data Analysis with LM-GG model}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  tidy = TRUE,
+  fig.width = 11,
+  tidy.opts = list(width.cutoff = 95),
+  message = FALSE,
+  warning = FALSE,
+  time_it = TRUE
+)
+all_times <- list()  # store the time for each chunk
+knitr::knit_hooks$set(time_it = local({
+  now <- NULL
+  function(before, options) {
+    if (before) {
+      now <<- Sys.time()
+    } else {
+      res <- difftime(Sys.time(), now, units = "secs")
+      all_times[[options$label]] <<- res
+    }
+  }
+}))
+```
+  
+This vignette introduces the `HierFabs` workflow for the analysis of the skin cutaneous melanoma (SKCM) dataset downloaded from The Cancer Genome Atlas [TCGA](https://tcga-data.nci.nih.gov), which contains disease outcomes, environmental factors, and high-dimensional gene expressions. The goal of analysis is to identify interactions that are associated with the prognosis of SKCM.
+
+We demonstrate the use of `HierFabs` to the SKCM data that are [here](https://github.com/XiaoZhangryy/HierFabs/tree/master/vignettes_data), which can be downloaded to the current working path by the following command:
+```{r eval=FALSE}
+githubURL <- "https://github.com/XiaoZhangryy/HierFabs/blob/master/vignettes_data/cleaned_SKCM_TCGA_Data.rda?raw=true"
+download.file(githubURL,"cleaned_SKCM_TCGA_Data.rda",mode='wb')
+```
+
+The outcome of interest is the (log-transformed) Breslow’s thickness, which is a continuous variable that has been suggested as a clinicopathologic feature of cutaneous melanoma. We conduct a prescreening by the p-value of a marginal linear model, and the top 2,000 genes are selected for downstream analysis. To identify GG interactions under the weak hierarchy, we need to fit a high dimensional linear model with 2,003,000 covariates.
+
+The package can be loaded with the command:
+```{r  eval = TRUE}
+library(HierFabs)
+library(Matrix)
+```
+
+Then load datasets to R 
+```{r  eval = TRUE}
+load("cleaned_SKCM_TCGA_Data.rda")
+```
+
+## Fit a linear model with gene-gene interaction under weak hierarchy constraint. The response is the log-transformed Breslow’s thickness. 
+```{r  eval = TRUE}
+Genes = as.matrix(data$gexp)
+Y = data$Y
+fit <- HierFabs(Genes, Y, eps=0.01, hier="weak", model="gaussian", diagonal=TRUE, criteria="BIC")
+```
+
+Then, we can use the `print` function to show the result. 
+```{r  eval = TRUE}
+print(fit)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+## Session information
+```{r  eval = TRUE}
+sessionInfo()
+```
