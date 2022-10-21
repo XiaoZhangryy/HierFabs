@@ -166,11 +166,11 @@ HierFabs = function(G, y, E, weight = NULL, model = c("gaussian", "cox", "quanti
 
   theta <- sparseMatrix(fit$index_i, fit$index_j, x = fit$beta, dims = c(q, fit$iter), index1 = FALSE)
   if (criteria== "BIC") {
-    fit$df = fit$df/2 + Matrix::colSums(theta[1:(px+pz),]!=0)/2
+    fit$df2 = fit$df/2 + Matrix::colSums(theta[1:(px+pz),]!=0)/2
     if (model == "cox") {
-      fit$bic = 2*fit$loss+fit$df*log(n)
+      fit$bic = 2*fit$loss+fit$df2*log(n)
     } else {
-      fit$bic = 2*n*fit$loss+fit$df*log(n)
+      fit$bic = 2*n*fit$loss+fit$df2*log(n)
     }
   }
   opt      = which.min(fit$bic)
