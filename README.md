@@ -3,6 +3,8 @@
  
   HierFabs uses coordinate descent with a fixed step size which consists of both forward and backward steps. At each step, the first-order Taylor's expansion is used to reflect the main part of the increment. 
 
+  Check out our [Package Website](https://XiaoZhangryy.github.io/HierFabs/index.html) for a more complete description of the methods and analyses. 
+
 # Installation
 
     #install Rtools 3.5 (http://cran.r-project.org/bin/windows/Rtools)
