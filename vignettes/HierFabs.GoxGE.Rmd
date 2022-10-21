@@ -55,7 +55,8 @@ Then load datasets to R
 load("cleaned_menaloma_Data.rda")
 ```
 
-## Fit a Cox model with gene-environment interaction under weak hierarchy constraint. 
+## Fit Cox-GE
+Fit a Cox model with gene-environment interaction under weak hierarchy constraint. 
 ```{r  eval = TRUE}
 y      = data$y
 status = data$status
