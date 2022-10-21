@@ -55,7 +55,8 @@ Then load datasets to R
 load("cleaned_SKCM_TCGA_Data.rda")
 ```
 
-## Fit a linear model with gene-gene interaction under weak hierarchy constraint. The response is the log-transformed Breslow’s thickness. 
+## Fit a linear model with gene-gene interaction under weak hierarchy constraint. 
+The response is the log-transformed Breslow’s thickness. 
 ```{r  eval = TRUE}
 Genes = as.matrix(data$gexp)
 Y = data$Y

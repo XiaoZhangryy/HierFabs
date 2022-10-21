@@ -103,9 +103,9 @@ zero and standard deviation one.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/load.html" class="external-link">load</a></span><span class="op">(</span><span class="st">"cleaned_menaloma_Data.rda"</span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
-<h2 id="fit-a-cox-model-with-gene-environment-interaction-under-weak-hierarchy-constraint-">Fit a Cox model with gene-environment interaction under weak
-hierarchy constraint.<a class="anchor" aria-label="anchor" href="#fit-a-cox-model-with-gene-environment-interaction-under-weak-hierarchy-constraint-"></a>
+<h2 id="fit-a-cox-model-with-gene-environment-interaction-under-weak-hierarchy-constraint-">Fit Cox-GE model<a class="anchor" aria-label="anchor" href="#fit-a-cox-model-with-gene-environment-interaction-under-weak-hierarchy-constraint-"></a>
 </h2>
+<p>Fit a Cox model with gene-environment interaction under weak hierarchy constraint.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">y</span> <span class="op">=</span> <span class="va">data</span><span class="op">$</span><span class="va">y</span></span>
 <span><span class="va">status</span> <span class="op">=</span> <span class="va">data</span><span class="op">$</span><span class="va">status</span></span>
@@ -118,25 +118,28 @@ result.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span><span class="co">#&gt; 5 x 20 sparse Matrix of class "dgCMatrix"</span></span>
-<span><span class="co">#&gt;                                                                           </span></span>
+<span><span class="co">#&gt;                             main effect CREG1    ZNF25    NXT2     MDP1   </span></span>
 <span><span class="co">#&gt; main effect                    .       -0.00814  .        .        .      </span></span>
 <span><span class="co">#&gt; tumor_status                   0.92192  .       -0.17667 -0.05527 -0.11836</span></span>
 <span><span class="co">#&gt; breslow_thickness_at_diagnosis 0.00207  .        .        .        .      </span></span>
 <span><span class="co">#&gt; age_at_diagnosis               0.00500  .        .        .        .      </span></span>
 <span><span class="co">#&gt; new_tumor_event_dx_indicator   .       -0.03493  .        .        .      </span></span>
 <span><span class="co">#&gt;                                                                           </span></span>
+<span><span class="co">#&gt;                                 RPS6KA3  TBC1D19  CSMD1    IFITM1   TBRG1 </span></span>
 <span><span class="co">#&gt; main effect                     .        .        .        .        .     </span></span>
 <span><span class="co">#&gt; tumor_status                   -0.01062 -0.05482 -0.01383 -0.10996 -0.0125</span></span>
 <span><span class="co">#&gt; breslow_thickness_at_diagnosis  .        .        .        .        .     </span></span>
 <span><span class="co">#&gt; age_at_diagnosis                .        .        .        .        .     </span></span>
 <span><span class="co">#&gt; new_tumor_event_dx_indicator    .        .        .        .        .     </span></span>
 <span><span class="co">#&gt;                                                                            </span></span>
+<span><span class="co">#&gt;                                 CARS     PTGR2    TSG101   CCT6B    VPS26A </span></span>
 <span><span class="co">#&gt; main effect                     .        .        .        .        .      </span></span>
 <span><span class="co">#&gt; tumor_status                   -0.13057 -0.01511 -0.02738 -0.01543 -0.03612</span></span>
 <span><span class="co">#&gt; breslow_thickness_at_diagnosis  .        .        .        .        .      </span></span>
 <span><span class="co">#&gt; age_at_diagnosis                .        .        .        .        .      </span></span>
 <span><span class="co">#&gt; new_tumor_event_dx_indicator    .        .        .        .        .      </span></span>
 <span><span class="co">#&gt;                                                                          </span></span>
+<span><span class="co">#&gt;                                 ADAM21   TMEM27   SNX14    TMC2     GNL3L </span></span>
 <span><span class="co">#&gt; main effect                     .        .        .        .       .     </span></span>
 <span><span class="co">#&gt; tumor_status                   -0.01176 -0.01233  .        .       .     </span></span>
 <span><span class="co">#&gt; breslow_thickness_at_diagnosis  .        .       -0.00461 -0.12921 .     </span></span>

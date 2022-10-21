@@ -20,11 +20,13 @@ knitr::opts_chunk$set(
 This vignette provides an introduction to the R package `HierFabs`, where the function `HierFabs` implements our model. With the completely newly developed forward and backward steps to accommodate hierarchy, `HierFabs` is able to detect important main effects and interactions under both the strong and weak hierarchy. Advancing from the existing studies, `HierFabs` accommodates multiple types of interaction models with differentiable loss functions under a unified framework. 
 The package can be installed with the following command from [Github](https://github.com/XiaoZhangryy/HierFabs):
 
-`install.packages('devtools')`
-`devtools::install_github("XiaoZhangryy/HierFabs")`
+```{r  eval=FALSE}
+install.packages('devtools')
+devtools::install_github("XiaoZhangryy/HierFabs")
+```
 
 The package can be loaded with the command:
-```{r  eval=TRUE}
+```{r  eval=FALSE}
 library("HierFabs")
 ```
 
