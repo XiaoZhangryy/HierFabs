@@ -18,5 +18,7 @@ Repository: github
 Encoding: UTF-8
 LazyData: true
 LazyDataCompression:xz
+URL: https://github.com/XiaoZhangryy/HierFabs
+BugReports: https://github.com/XiaoZhangryy/HierFabs/issues
 RoxygenNote: 7.1.2
 NeedsCompilation: yes

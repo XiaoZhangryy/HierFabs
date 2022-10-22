@@ -16,8 +16,16 @@ knitr::opts_chunk$set(
 )
 ```
   
-## Install the HierFabs
-This vignette provides an introduction to the R package `HierFabs`, where the function `HierFabs` implements our model. With the completely newly developed forward and backward steps to accommodate hierarchy, `HierFabs` is able to detect important main effects and interactions under both the strong and weak hierarchy. Advancing from the existing studies, `HierFabs` accommodates multiple types of interaction models with differentiable loss functions under a unified framework. 
+# Introduce the HierFabs
+This vignette provides an introduction to the R package `HierFabs`, where the function `HierFabs` implements our model.  
+
+* With the completely newly developed forward and backward steps to accommodate hierarchy, `HierFabs` is able to detect important main effects and interactions under both the strong and weak hierarchy. User can specify the hierarchy constraint by parameter `hier`.
+* Advancing from the existing studies, `HierFabs` accommodates multiple types of interaction models with differentiable loss functions under a unified framework. For now, `HierFabs` supports linear mdoel, Cox model, quantile model and logistic model. User can specify the model by parameter `model`.
+* `HierFabs` can be applied for both gene-gene interaction analysis and gene-environment interaction analysis. Which type of analysis is used depends on whether environmental variables are provided. 
+* `HierFabs` is observed to be highly computational efficient. It uses a warm-start strategy to update coefficients and a data-driven approach to update tuning parameter.  
+  
+# Install the HierFabs
+
 The package can be installed with the following command from [Github](https://github.com/XiaoZhangryy/HierFabs):
 
 ```{r  eval=FALSE}
@@ -30,18 +38,11 @@ The package can be loaded with the command:
 library("HierFabs")
 ```
 
+# Report issues
+If someone have any problem or suggestion, welcom to go [there](https://github.com/XiaoZhangryy/HierFabs/issues) to create an issue. 
 
 
-
-
-
-
-
-
-
-
-
-## Session information
+# Session information
 ```{r  eval = TRUE}
 sessionInfo()
 ```

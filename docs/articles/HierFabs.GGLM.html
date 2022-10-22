@@ -53,7 +53,14 @@
         <input type="search" class="form-control me-sm-2" aria-label="Toggle navigation" name="search-input" data-search-index="../search.json" id="search-input" placeholder="Search for" autocomplete="off">
 </form>
 
-      <ul class="navbar-nav"></ul>
+      <ul class="navbar-nav">
+<li class="nav-item">
+  <a class="nav-link" href="https://github.com/XiaoZhangryy/HierFabs/" aria-label="github">
+    <span class="fab fa fab fa-github fa-lg"></span>
+     
+  </a>
+</li>
+      </ul>
 </div>
 
     
@@ -68,9 +75,9 @@
       <img src="" class="logo" alt=""><h1>HierFabs: SKCM Data Analysis with LM-GG model</h1>
                         <h4 data-toc-skip class="author">Xiao Zhang</h4>
             
-            <h4 data-toc-skip class="date">2022-10-21</h4>
+            <h4 data-toc-skip class="date">2022-10-22</h4>
       
-      
+      <small class="dont-index">Source: <a href="https://github.com/XiaoZhangryy/HierFabs/blob/HEAD/vignettes/HierFabs.GGLM.Rmd"><code>vignettes/HierFabs.GGLM.Rmd</code></a></small>
       <div class="d-none name"><code>HierFabs.GGLM.Rmd</code></div>
     </div>
 
@@ -89,7 +96,7 @@ command:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">githubURL</span> <span class="op">&lt;-</span> <span class="st">"https://github.com/XiaoZhangryy/HierFabs/blob/master/vignettes_data/cleaned_SKCM_TCGA_Data.rda?raw=true"</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/download.file.html" class="external-link">download.file</a></span><span class="op">(</span><span class="va">githubURL</span>, <span class="st">"cleaned_SKCM_TCGA_Data.rda"</span>, mode <span class="op">=</span> <span class="st">"wb"</span><span class="op">)</span></span></code></pre></div>
-<p>The outcome of interest is the (log-transformed) Breslow's thickness,
+<p>The outcome of interest is the (log-transformed) Breslow’s thickness,
 which is a continuous variable that has been suggested as a
 clinicopathologic feature of cutaneous melanoma. We conduct a
 prescreening by the p-value of a marginal linear model, and the top
@@ -98,15 +105,16 @@ interactions under the weak hierarchy, we need to fit a high dimensional
 linear model with 2,003,000 covariates.</p>
 <p>The package can be loaded with the command:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">HierFabs</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/XiaoZhangryy/HierFabs">HierFabs</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://Matrix.R-forge.R-project.org/" class="external-link">Matrix</a></span><span class="op">)</span></span></code></pre></div>
 <p>Then load datasets to R</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/load.html" class="external-link">load</a></span><span class="op">(</span><span class="st">"cleaned_SKCM_TCGA_Data.rda"</span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
-<h2 id="fit-a-linear-model-with-gene-gene-interaction-under-weak-hierarchy-constraint--the-response-is-the-log-transformed-breslows-thickness-">Fit LM-GG<a class="anchor" aria-label="anchor" href="#fit-a-linear-model-with-gene-gene-interaction-under-weak-hierarchy-constraint--the-response-is-the-log-transformed-breslows-thickness-"></a>
+<h2 id="fit-lm-gg">Fit LM-GG<a class="anchor" aria-label="anchor" href="#fit-lm-gg"></a>
 </h2>
-<p>Fit a linear model with gene-gene interaction under weak hierarchy constraint. The response is the log-transformed Breslow's thickness.</p>
+<p>Fit a linear model with gene-gene interaction under weak hierarchy
+constraint. The response is the log-transformed Breslow’s thickness.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Genes</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">gexp</span><span class="op">)</span></span>
 <span><span class="va">Y</span> <span class="op">=</span> <span class="va">data</span><span class="op">$</span><span class="va">Y</span></span>
@@ -137,7 +145,7 @@ result.</p>
 <span><span class="co">#&gt; STAMBPL1 .         .        .       .      </span></span>
 <span><span class="co">#&gt; INPP5K   .         .        .       .      </span></span>
 <span><span class="co">#&gt; SERP2    0.00313  -0.04368  .       .      </span></span>
-<span><span class="co">#&gt; NR2F1    .         .       -0.01841 0.12726</span></span></code></pre></div>
+<span><span class="co">#&gt; NR2F1    .        .       -0.01841 0.12726</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="session-information">Session information<a class="anchor" aria-label="anchor" href="#session-information"></a>

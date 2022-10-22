@@ -53,7 +53,14 @@
         <input type="search" class="form-control me-sm-2" aria-label="Toggle navigation" name="search-input" data-search-index="../search.json" id="search-input" placeholder="Search for" autocomplete="off">
 </form>
 
-      <ul class="navbar-nav"></ul>
+      <ul class="navbar-nav">
+<li class="nav-item">
+  <a class="nav-link" href="https://github.com/XiaoZhangryy/HierFabs/" aria-label="github">
+    <span class="fab fa fab fa-github fa-lg"></span>
+     
+  </a>
+</li>
+      </ul>
 </div>
 
     
@@ -68,32 +75,58 @@
       <img src="" class="logo" alt=""><h1>HierFabs: installation</h1>
                         <h4 data-toc-skip class="author">Xiao Zhang</h4>
             
-            <h4 data-toc-skip class="date">2022-10-21</h4>
+            <h4 data-toc-skip class="date">2022-10-22</h4>
       
-      
+      <small class="dont-index">Source: <a href="https://github.com/XiaoZhangryy/HierFabs/blob/HEAD/vignettes/HierFabs.Rmd"><code>vignettes/HierFabs.Rmd</code></a></small>
       <div class="d-none name"><code>HierFabs.Rmd</code></div>
     </div>
 
     
     
 <div class="section level2">
-<h2 id="install-the-hierfabs">Install the HierFabs<a class="anchor" aria-label="anchor" href="#install-the-hierfabs"></a>
+<h2 id="introduce-the-hierfabs">Introduce the HierFabs<a class="anchor" aria-label="anchor" href="#introduce-the-hierfabs"></a>
 </h2>
 <p>This vignette provides an introduction to the R package
 <code>HierFabs</code>, where the function <code>HierFabs</code>
-implements our model. With the completely newly developed forward and
-backward steps to accommodate hierarchy, <code>HierFabs</code> is able
-to detect important main effects and interactions under both the strong
-and weak hierarchy. Advancing from the existing studies,
-<code>HierFabs</code> accommodates multiple types of interaction models
-with differentiable loss functions under a unified framework. The
-package can be installed with the following command from <a href="https://github.com/XiaoZhangryy/HierFabs">Github</a>:</p>
+implements our model.</p>
+<ul>
+<li>With the completely newly developed forward and backward steps to
+accommodate hierarchy, <code>HierFabs</code> is able to detect important
+main effects and interactions under both the strong and weak hierarchy.
+User can specify the hierarchy constraint by parameter
+<code>hier</code>.</li>
+<li>Advancing from the existing studies, <code>HierFabs</code>
+accommodates multiple types of interaction models with differentiable
+loss functions under a unified framework. For now, <code>HierFabs</code>
+supports linear mdoel, Cox model, quantile model and logistic model.
+User can specify the model by parameter <code>model</code>.</li>
+<li>
+<code>HierFabs</code> can be applied for both gene-gene interaction
+analysis and gene-environment interaction analysis. Which type of
+analysis is used depends on whether environmental variables are
+provided.</li>
+<li>
+<code>HierFabs</code> is observed to be highly computational
+efficient. It uses a warm-start strategy to update coefficients and a
+data-driven approach to update tuning parameter.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="install-the-hierfabs">Install the HierFabs<a class="anchor" aria-label="anchor" href="#install-the-hierfabs"></a>
+</h2>
+<p>The package can be installed with the following command from <a href="https://github.com/XiaoZhangryy/HierFabs">Github</a>:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">'devtools'</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"XiaoZhangryy/HierFabs"</span><span class="op">)</span></span></code></pre></div>
 <p>The package can be loaded with the command:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="st">"HierFabs"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/XiaoZhangryy/HierFabs">"HierFabs"</a></span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="report-issues">Report issues<a class="anchor" aria-label="anchor" href="#report-issues"></a>
+</h2>
+<p>If someone have any problem or suggestion, welcom to go <a href="https://github.com/XiaoZhangryy/HierFabs/issues">there</a> to
+create an issue.</p>
 </div>
 <div class="section level2">
 <h2 id="session-information">Session information<a class="anchor" aria-label="anchor" href="#session-information"></a>
