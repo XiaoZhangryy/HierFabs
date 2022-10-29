@@ -1042,6 +1042,7 @@ int *df, *child, isq, *stautus, *sparse_i, *sparse_j, *iter, max_s;
     int tt_act_b = 0;
     int tt_act_a = 0;
     usi(sparse_i, sparse_j, &tt_act_b, &tt_act_a, active, param[3], 0);
+    if (param[7] == 1) lam_m = lam_m/lambda[0];
 
     // step 2: forward and backward
     for (i = 0; i < *iter-1; ++i)
@@ -2056,6 +2057,7 @@ int *df, *child, *stautus, *sparse_i, *sparse_j, stoping, max_s;
     int tt_act_b = 0;
     int tt_act_a = 0;
     usi(sparse_i, sparse_j, &tt_act_b, &tt_act_a, active, param[3], 0);
+    if (param[7] == 1) lam_m = lam_m/lambda[0];
 
     // step 2: forward and backward
     for (i = 0; i < *iter-1; ++i)

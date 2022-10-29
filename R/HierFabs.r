@@ -12,7 +12,8 @@
 #' @param eps Step size. Default is 0.01.
 #' @param xi A tolerate to improve program stability. Default is 10^-6.
 #' @param iter Maximum number of outer-loop iterations allowed. Default is 3000.
-#' @param lambda.min Smallest value for lambda, as a fraction of lambda.max.
+#' @param lambda.min Smallest value for lambda. \code{NULL} by default. 
+#' @param lambda.ratio Smallest value for lambda, as a fraction of lambda.max. Works when lambda.min is \code{NULL}.
 #' @param hier Whether to enforce strong or weak heredity. Default is 'strong'.
 #' @param max_s Limit the maximum number of variables in the model. When exceed this limit, program will early stopped.
 #' @param diagonal An indicator of whether to include "pure" quadratic terms. Work when gene-gene interactions are of interest.
@@ -86,7 +87,7 @@
 #' print(fit.ge.weak)
 
 HierFabs = function(G, y, E, weight = NULL, model = c("gaussian", "cox", "quantile", "logistic"), back = TRUE,
-  stoping = TRUE, eps = 0.01, xi = 10^-6, iter = 3000, lambda.min = NULL,
+  stoping = TRUE, eps = 0.01, xi = 10^-6, iter = 3000, lambda.min = NULL, lambda.ratio = NULL, 
   hier = c("strong", "weak"), max_s = NULL, diagonal = FALSE, status = NULL, gamma = NULL, 
   tau = NUL, criteria = c("EBIC", "BIC"))
 {
@@ -109,18 +110,23 @@ HierFabs = function(G, y, E, weight = NULL, model = c("gaussian", "cox", "quanti
 
   if (is.null(weight))         weight = rep(1, q)
   if (is.null(status))         status = rep(1, n)
-  if (is.null(lambda.min)) lambda.min = {if (n > q) 1e-4 else .02}
   if (is.null(gamma)) gamma = 1-log(n)/(2*log(q))
   if(is.null(colnames(G))) colnames(G) = paste("G", 1:px, sep = "")
 
 
-  param     = c(n, px, q, 0, 0, pz, 0)
+  param     = c(n, px, q, 0, 0, pz, 0, 0)
   hier = match.arg(hier)
   criteria = match.arg(criteria)
   model     = match.arg(model)
   meany     = mean(y)
   if (model != "logistic") {
     y = y - meany
+  }
+  if (is.null(lambda.min)) {
+    if (is.null(lambda.ratio)) lambda.ratio = {if (n > q) 1e-4 else .02}
+  } else {
+    param[8] = 1
+    lambda.ratio = lambda.min
   }
   
 
@@ -149,7 +155,7 @@ HierFabs = function(G, y, E, weight = NULL, model = c("gaussian", "cox", "quanti
                as.numeric(weight),
                as.character(model),
                as.numeric(eps),
-               as.numeric(lambda.min),
+               as.numeric(lambda.ratio),
                as.numeric(xi),
                as.integer(back),
                as.integer(stoping),

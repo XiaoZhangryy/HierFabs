@@ -16,6 +16,7 @@ HierFabs(
   xi = 10^-6,
   iter = 3000,
   lambda.min = NULL,
+  lambda.ratio = NULL,
   hier = c("strong", "weak"),
   max_s = NULL,
   diagonal = FALSE,
@@ -46,7 +47,9 @@ HierFabs(
 
 \item{iter}{Maximum number of outer-loop iterations allowed. Default is 3000.}
 
-\item{lambda.min}{Smallest value for lambda, as a fraction of lambda.max.}
+\item{lambda.min}{Smallest value for lambda. \code{NULL} by default.}
+
+\item{lambda.ratio}{Smallest value for lambda, as a fraction of lambda.max. Works when lambda.min is \code{NULL}.}
 
 \item{hier}{Whether to enforce strong or weak heredity. Default is 'strong'.}
 
