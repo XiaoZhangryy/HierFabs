@@ -1058,7 +1058,7 @@ int *df, *child, isq, *stautus, *sparse_i, *sparse_j, *iter, max_s;
         }
         usi(sparse_i, sparse_j, &tt_act_b, &tt_act_a, active, param[3], i+1);
 
-        if ( stoping && (lambda[i+1] <= lambda[0] * lam_m) ) {
+        if ( stoping && (lambda[i+1] < lambda[0] * lam_m) ) {
             *iter = i+2;
             if (lambda[i+1] < 0) 
             {
@@ -2073,7 +2073,7 @@ int *df, *child, *stautus, *sparse_i, *sparse_j, stoping, max_s;
         }
         usi(sparse_i, sparse_j, &tt_act_b, &tt_act_a, active, param[3], i+1);
 
-        if ( stoping && (lambda[i+1] <= lambda[0] * lam_m) ) {
+        if ( stoping && (lambda[i+1] < lambda[0] * lam_m) ) {
             *iter = i+2;
             if (lambda[i+1] < 0) 
             {
